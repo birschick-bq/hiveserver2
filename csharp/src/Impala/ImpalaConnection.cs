@@ -33,7 +33,7 @@ namespace AdbcDrivers.HiveServer2.Impala
 {
     internal abstract class ImpalaConnection : HiveServer2Connection
     {
-        internal static readonly string s_userAgent = $"{DriverName.Replace(" ", "")}/{ProductVersionDefault}";
+        internal readonly Lazy<string> _userAgent;
 
         private const string ProductVersionDefault = "1.0.0";
         private const string DriverName = "ADBC Impala Driver";
@@ -52,6 +52,7 @@ namespace AdbcDrivers.HiveServer2.Impala
         {
             ValidateProperties();
             _productVersion = new Lazy<string>(() => GetProductVersion(), LazyThreadSafetyMode.PublicationOnly);
+            _userAgent = new Lazy<string>(() =>  $"{DriverName.Replace(" ", "")}/{ApacheUtility.GetAssemblyVersion(GetType())}", LazyThreadSafetyMode.PublicationOnly);
         }
 
         private void ValidateProperties()
