@@ -98,7 +98,7 @@ namespace AdbcDrivers.Tests.HiveServer2.Common
         /// Validates if the driver can execute update statements.
         /// </summary>
         [SkippableFact, Order(1)]
-        public void CanExecuteUpdate()
+        public virtual void CanExecuteUpdate()
         {
             AdbcConnection adbcConnection = NewConnection();
 
@@ -330,7 +330,7 @@ namespace AdbcDrivers.Tests.HiveServer2.Common
         /// Validates if the driver can call GetObjects for GetObjectsDepth as All.
         /// </summary>
         [SkippableFact, Order(6)]
-        public void CanGetObjectsAll()
+        public virtual void CanGetObjectsAll()
         {
             // need to add the database
             string? databaseName = TestConfiguration.Metadata.Catalog;
@@ -367,7 +367,6 @@ namespace AdbcDrivers.Tests.HiveServer2.Common
             Assert.True(columns != null, "Columns cannot be null");
             Assert.Equal(TestConfiguration.Metadata.ExpectedColumnCount, columns.Count);
 
-            HiveServer2Connection hiveServer2Connection = (HiveServer2Connection)Connection;
             for (int i = 0; i < columns.Count; i++)
             {
                 // Verify column metadata is returned/consistent.
@@ -523,7 +522,10 @@ namespace AdbcDrivers.Tests.HiveServer2.Common
         [InlineData(1.0)]
         [InlineData(2.0)]
         [InlineData(null)]
-        public void CanExecuteQuery(double? batchSizeFactor)
+        public void CanExecuteQuery(double? batchSizeFactor) =>
+            ValidateCanExecuteQuery(batchSizeFactor);
+
+        protected virtual void ValidateCanExecuteQuery(double? batchSizeFactor)
         {
             // Ensure all records can be retrieved, independent of the batch size.
             TConfig testConfiguration = (TConfig)TestConfiguration.Clone();
@@ -548,7 +550,7 @@ namespace AdbcDrivers.Tests.HiveServer2.Common
         /// parse the results using the asynchronous methods.
         /// </summary>
         [SkippableFact, Order(11)]
-        public async Task CanExecuteQueryAsync()
+        public virtual async Task CanExecuteQueryAsync()
         {
             using AdbcConnection adbcConnection = NewConnection();
             using AdbcStatement statement = adbcConnection.CreateStatement();
