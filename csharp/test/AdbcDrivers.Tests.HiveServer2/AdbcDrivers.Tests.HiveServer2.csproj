@@ -16,11 +16,16 @@
     <PackageReference Include="Xunit.SkippableFact" />
     <PackageReference Include="System.Net.Http" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
     <PackageReference Include="K4os.Compression.LZ4" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\arrow-adbc\csharp\test\Apache.Arrow.Adbc.Tests\Apache.Arrow.Adbc.Testing.csproj" />
     <ProjectReference Include="..\..\src\AdbcDrivers.HiveServer2\AdbcDrivers.HiveServer2.csproj" />
+    <ProjectReference Include="..\AdbcDrivers.HiveServer2.TestServer\AdbcDrivers.HiveServer2.TestServer.csproj" />
   </ItemGroup>
 
   <ItemGroup>
