@@ -239,14 +239,21 @@ namespace AdbcDrivers.HiveServer2.Hive2
                 }
                 finally
                 {
-                    activity?.AddTag(SemanticConventions.Db.Response.ReturnedRows, affectedRows ?? -1);
+                    // Only tag when we have a real affected-row count. The `-1` sentinel
+                    // (Thrift returned no `num_affected_rows` column, e.g. DDL paths) is
+                    // misleading in APM dashboards — omit the tag entirely instead.
+                    // Backends naturally interpret absent-tag as "unknown".
+                    if (affectedRows.HasValue && affectedRows.Value >= 0)
+                    {
+                        activity?.AddTag(SemanticConventions.Db.Response.ReturnedRows, affectedRows.Value);
+                    }
                 }
             }, ClassName + "." + nameof(ExecuteUpdateAsyncInternal));
         }
 
         public override async Task<UpdateResult> ExecuteUpdateAsync()
         {
-            return await this.TraceActivityAsync(async _ =>
+            return await this.TraceActivityAsync(async activity =>
             {
                 CancellationTokenSource ts = SetTokenSource();
                 try
@@ -255,10 +262,16 @@ namespace AdbcDrivers.HiveServer2.Hive2
                 }
                 catch (Exception ex) when (IsCancellation(ex, ts.Token))
                 {
+                    // We can't safely distinguish query_timeout from user_cancel
+                    // here: the statement-level CTS has a CancelAfter timer AND
+                    // the parent driver can call Statement.Cancel() (which also
+                    // triggers ts.Token). Disambiguating requires cross-layer
+                    // state and is deferred per adbc-drivers/databricks#481.
                     throw new TimeoutException("The query execution timed out or was cancelled. Consider increasing the query timeout value.", ex);
                 }
                 catch (Exception ex) when (ex is not HiveServer2Exception)
                 {
+                    ErrorKindClassifier.Tag(activity, ex);
                     throw new HiveServer2Exception($"An unexpected error occurred while fetching results. '{ApacheUtility.FormatExceptionMessage(ex)}'", ex);
                 }
                 finally
@@ -355,6 +368,7 @@ namespace AdbcDrivers.HiveServer2.Hive2
                 {
                     if (!string.IsNullOrEmpty(response.DirectResults.OperationStatus.DisplayMessage))
                     {
+                        ErrorKindClassifier.Tag(activity, HiveServer2.ActivityKeys.Db.ErrorKindValues.ServerError);
                         throw new HiveServer2Exception(response.DirectResults.OperationStatus.DisplayMessage)
                             .SetSqlState(response.DirectResults.OperationStatus.SqlState)
                             .SetNativeError(response.DirectResults.OperationStatus.ErrorCode);
